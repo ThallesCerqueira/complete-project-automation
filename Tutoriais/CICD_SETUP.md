@@ -54,7 +54,7 @@ git push -u origin main
 ```
 
 Ao fazer o push, o pipeline de CI **já vai rodar automaticamente**.
-Acesse: `https://github.com/SEU_USUARIO/produto-crud/actions`
+Acesse o link: `https://github.com/SEU_USUARIO/produto-crud/actions`
 
 ---
 
