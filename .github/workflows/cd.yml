@@ -1,0 +1,104 @@
+name: CD — Deploy
+
+# Roda APENAS quando há push na branch main
+# (ou seja, quando um PR é aprovado e mergeado)
+on:
+  push:
+    branches: [main]
+
+jobs:
+
+  # ─────────────────────────────────────────────
+  # JOB 1: Publicar imagens no Docker Hub
+  # ─────────────────────────────────────────────
+  publicar-imagens:
+    name: Publicar imagens Docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🐳 Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Login no Docker Hub usando secrets configurados no GitHub
+      - name: 🔐 Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Gera as tags automaticamente:
+      # - latest (sempre aponta para o build mais recente)
+      # - sha-<hash> (tag imutável com o hash do commit)
+      - name: 🏷️ Gerar tags do backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/produtos-backend
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: 🏷️ Gerar tags do frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/produtos-frontend
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: 🚀 Build e push do backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🚀 Build e push do frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────
+  # JOB 2: Deploy no servidor (via SSH)
+  # Só roda após as imagens serem publicadas com sucesso
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy no servidor
+    runs-on: ubuntu-latest
+    needs: publicar-imagens
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      # Conecta no servidor via SSH e executa os comandos de deploy
+      - name: 🚀 Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Acessa a pasta do projeto no servidor
+            cd ~/produto-crud
+
+            # Baixa as imagens mais recentes do Docker Hub
+            docker compose pull
+
+            # Recria os containers com as novas imagens (sem downtime nos outros)
+            docker compose up -d --no-build
+
+            # Remove imagens antigas que não são mais usadas
+            docker image prune -f
+
+            echo "✅ Deploy concluído com sucesso!"
