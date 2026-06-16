@@ -72,33 +72,35 @@ jobs:
   # JOB 2: Deploy no servidor (via SSH)
   # Só roda após as imagens serem publicadas com sucesso
   # ─────────────────────────────────────────────
-  deploy:
-    name: Deploy no servidor
-    runs-on: ubuntu-latest
-    needs: publicar-imagens
+  
 
-    steps:
-      - name: 📥 Checkout do código
-        uses: actions/checkout@v4
+#  deploy:
+#    name: Deploy no servidor
+#    runs-on: ubuntu-latest
+#    needs: publicar-imagens
+
+#    steps:
+#      - name: 📥 Checkout do código
+#        uses: actions/checkout@v4
 
       # Conecta no servidor via SSH e executa os comandos de deploy
-      - name: 🚀 Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Acessa a pasta do projeto no servidor
-            cd ~/produto-crud
-
-            # Baixa as imagens mais recentes do Docker Hub
-            docker compose pull
-
-            # Recria os containers com as novas imagens (sem downtime nos outros)
-            docker compose up -d --no-build
-
-            # Remove imagens antigas que não são mais usadas
-            docker image prune -f
-
-            echo "✅ Deploy concluído com sucesso!"
+#      - name: 🚀 Deploy via SSH
+#        uses: appleboy/ssh-action@v1
+#        with:
+#          host: ${{ secrets.SSH_HOST }}
+#          username: ${{ secrets.SSH_USER }}
+#          key: ${{ secrets.SSH_PRIVATE_KEY }}
+#          script: |
+#            # Acessa a pasta do projeto no servidor
+#            cd ~/produto-crud
+#
+#            # Baixa as imagens mais recentes do Docker Hub
+#            docker compose pull
+#
+#            # Recria os containers com as novas imagens (sem downtime nos outros)
+#            docker compose up -d --no-build
+#
+#            # Remove imagens antigas que não são mais usadas
+#            docker image prune -f
+#
+#            echo "✅ Deploy concluído com sucesso!"            
