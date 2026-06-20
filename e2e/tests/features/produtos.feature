@@ -17,3 +17,9 @@ Feature: Cadastro de produtos
         And altero a quantidade do produto para "100"
         And clico no botao salvar alteracoes
         Then vejo que a quantidade do produto "Notebook Gamer" mudou para "100"
+
+    Scenario: Excluir um produto com sucesso
+        Given que existe um produto "Mouse" cadastrado
+        And acesso a tela de produtos
+        When clico no botao Remover do produto "Mouse"
+        Then o produto "Mouse" nao aparece mais na listagem de produtos

@@ -90,6 +90,20 @@ When('clico no botao Editar do produto {string}', async({page, produtoCriado}, n
 
 })
 
+When('clico no botao Remover do produto {string}', async({page, produtoCriado}, nomeIgnorado) => {
+
+    const produtosPage = new ProdutosPage(page);
+    await produtosPage.clicarBotaoRemover(produtoCriado.get());
+
+})
+
+Then('o produto {string} nao aparece mais na listagem de produtos', async({page, produtoCriado}, nome) => {
+
+    const produtosPage = new ProdutosPage(page);
+    await produtosPage.verificarProdutoInexistenteNaLista(produtoCriado.get());
+
+})
+
 Then('vejo {string} na listagem de produtos', async({page}, produto) => {
 
     const produtosPage = new ProdutosPage(page);
