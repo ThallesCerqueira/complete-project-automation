@@ -9,3 +9,11 @@ Feature: Cadastro de produtos
         And preencho a categoria com "Informática"
         And clico no botao adicionar produto
         Then vejo "Notebook Gamer" na listagem de produtos
+
+    Scenario: Editar um produto com sucesso
+        Given que existe um produto "Notebook Gamer" cadastrado
+        And acesso a tela de produtos
+        When clico no botao Editar do produto "Notebook Gamer"
+        And altero a quantidade do produto para "100"
+        And clico no botao salvar alteracoes
+        Then vejo que a quantidade do produto "Notebook Gamer" mudou para "100"
