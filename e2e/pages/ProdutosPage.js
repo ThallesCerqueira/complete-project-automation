@@ -47,7 +47,6 @@ export class ProdutosPage {
 
   async clicarBotaoAdicionarProduto() {
 
-
     await this.botaoAdicionarProduto.click();
 
   }
@@ -56,6 +55,20 @@ export class ProdutosPage {
 
     const tabela = this.page.getByTestId('produto-tabela');
     await expect(tabela.getByText(nome).first()).toBeVisible();
+
+  }
+
+  async clicarBotaoEditar(nome) {
+
+    const linha = this.page.getByTestId('produto-tabela').getByRole('row', { name: nome});
+    await linha.getByRole('button', {name: 'Editar'}).click();
+
+  }
+
+  async verificarQuantidadeProduto(nome, quantidade) {
+
+    const linha = this.page.getByTestId('produto-tabela').getByRole('row', { name: nome});
+    await expect(linha.getByRole('cell', {name: quantidade, exact: true })).toBeVisible();
 
   }
 
