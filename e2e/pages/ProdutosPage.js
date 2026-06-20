@@ -58,10 +58,25 @@ export class ProdutosPage {
 
   }
 
+  async verificarProdutoInexistenteNaLista(nome) {
+
+    const tabela = this.page.getByTestId('produto-tabela');
+    await expect(tabela.getByText(nome).first()).not.toBeVisible();
+
+  }
+
   async clicarBotaoEditar(nome) {
 
     const linha = this.page.getByTestId('produto-tabela').getByRole('row', { name: nome});
     await linha.getByRole('button', {name: 'Editar'}).click();
+
+  }
+
+  async clicarBotaoRemover(nome) {
+
+    const linha = this.page.getByTestId('produto-tabela').getByRole('row', { name: nome});
+    this.page.once('dialog', dialog => dialog.accept());
+    await linha.getByRole('button', {name: 'Remover'}).click();
 
   }
 
