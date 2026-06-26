@@ -10,4 +10,15 @@ export const test = base.extend({
             get: ()=> nome,
         });
     },
+
+    respostaApi: async ({}, use) => {
+
+        let response = null;
+
+        await use({
+            set: (valor) => {response = valor;},
+            get: ()=> response,
+        });
+    },
+
 });
