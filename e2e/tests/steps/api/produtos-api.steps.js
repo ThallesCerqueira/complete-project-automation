@@ -37,6 +37,18 @@ When('envio uma requisicao delete para remover o produto criado', async({request
 
 })
 
+When('envio uma requisicao put para atualizar o produto criado, mudando nome para {string}', async({request, respostaApi}, nomeEdit) => {
+
+    let resposta = await respostaApi.get();
+    let jsonG = await resposta.json();
+    let id = jsonG.id;
+    jsonG.nome = nomeEdit;
+    jsonG.preco = parseFloat(jsonG.preco);
+    resposta = await request.put(`/api/produtos/${id}`, { data: jsonG})
+    respostaApi.set(resposta);
+
+})
+
 When('envio uma requisicao post com nome {string} e preco {int}', async({request, respostaApi}, nome, preco) => {
 
     const nomeUnico = `${nome} ${Date.now()}`;
