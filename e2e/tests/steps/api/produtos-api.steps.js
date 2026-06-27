@@ -4,6 +4,8 @@ import { expect } from '@playwright/test';
 
 const { Given, When, Then } = createBdd(test);
 
+
+// Arquivo para linkagem de frases com metodos
 Given('que o sistema esta online', async({request}) => {
 
     const resposta = await request.get('/health'); 
@@ -31,7 +33,7 @@ When('envio uma requisicao delete para remover o produto criado', async({request
 
     let resposta = await respostaApi.get();
     let jsonG = await resposta.json();
-    let id = jsonG.id;
+    let id = jsonG.id; 
     resposta = await request.delete(`/api/produtos/${id}`)
     respostaApi.set(resposta);
 

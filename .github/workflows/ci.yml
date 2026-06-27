@@ -1,8 +1,5 @@
 name: CI — Testes Automatizados
 
-# Quando este pipeline roda:
-# - Em qualquer push para main ou develop
-# - Em qualquer Pull Request aberto contra main
 on:
   push:
     branches: [main, develop]
@@ -18,7 +15,6 @@ jobs:
     name: Testes do Backend
     runs-on: ubuntu-latest
 
-    # Sobe um PostgreSQL real para os testes de integração
     services:
       postgres:
         image: postgres:16-alpine
@@ -28,7 +24,6 @@ jobs:
           POSTGRES_DB: produtos_db_test
         ports:
           - 5432:5432
-        # Aguarda o banco estar pronto antes de rodar os testes
         options: >-
           --health-cmd pg_isready
           --health-interval 5s
@@ -87,13 +82,106 @@ jobs:
         run: npm test
 
   # ─────────────────────────────────────────────
-  # JOB 3: Build das imagens Docker
-  # Só roda se os dois jobs de teste passarem
+  # JOB 3: Testes E2E e API (Playwright + BDD)
+  # ─────────────────────────────────────────────
+  testes-e2e:
+    name: Testes E2E e API
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: produtos_db_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # ── Backend ──────────────────────────────
+      - name: 📦 Instalar dependências do backend
+        working-directory: backend
+        run: npm ci
+
+      - name: 🗄️ Inicializar banco de dados
+        run: psql -h localhost -U postgres -d produtos_db_test -f backend/src/db/init.sql
+        env:
+          PGPASSWORD: postgres
+
+      - name: 🚀 Subir backend em background
+        working-directory: backend
+        run: npm start &
+        env:
+          PORT: 3001
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: produtos_db_test
+
+      - name: ⏳ Aguardar backend estar pronto
+        run: npx wait-on http://localhost:3001/health --timeout 30000
+
+      # ── Frontend ─────────────────────────────
+      - name: 📦 Instalar dependências do frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: 🚀 Subir frontend em background
+        working-directory: frontend
+        run: npm run dev -- --port 8081 &
+        env:
+          VITE_API_URL: http://localhost:3001/api
+
+      - name: ⏳ Aguardar frontend estar pronto
+        run: npx wait-on http://localhost:8081 --timeout 30000
+
+      # ── Playwright ───────────────────────────
+      - name: 📦 Instalar dependências do E2E
+        working-directory: e2e
+        run: npm ci
+
+      - name: 🎭 Instalar browsers do Playwright
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: 🧪 Rodar testes E2E e API
+        working-directory: e2e
+        run: npx bddgen && npx playwright test
+        env:
+          CI: true
+
+      # ── Relatório ────────────────────────────
+      - name: 📊 Publicar relatório do Playwright
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # JOB 4: Build das imagens Docker
+  # Só roda se os três jobs de teste passarem
   # ─────────────────────────────────────────────
   build:
     name: Build Docker
     runs-on: ubuntu-latest
-    needs: [testes-backend, testes-frontend]
+    needs: [testes-backend, testes-frontend, testes-e2e]
 
     steps:
       - name: 📥 Checkout do código
@@ -106,7 +194,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          push: false       # só verifica se o build funciona, sem publicar
+          push: false
           tags: produtos-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
